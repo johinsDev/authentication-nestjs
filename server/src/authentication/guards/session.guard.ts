@@ -4,50 +4,19 @@ import { FastifyRequest } from 'fastify';
 import * as Session from 'fastify-secure-session';
 import { HashService } from 'src/hash/hash.service';
 import { GuardContract, UserProvider } from '../authentication.interface';
-import { InvalidCredentialsException } from '../execeptions/invalid-credentials.exeception';
 import { BaseGuard } from './base.guard';
 
 @Injectable()
 export class SessionGuard extends BaseGuard implements GuardContract {
   constructor(
     @Inject('USER_PROVIDER')
-    private readonly provider: UserProvider<any>,
-    private readonly hash: HashService,
+    public readonly provider: UserProvider<any>,
+    public readonly hash: HashService,
     @Inject(REQUEST)
     private readonly request: FastifyRequest & { session: Session.Session },
   ) {
-    super();
+    super('session', provider, hash);
   }
-
-  public name = 'session';
-
-  /**
-   * Whether or not the authentication has been attempted
-   * for the current request
-   */
-  public authenticationAttempted = false;
-
-  /**
-   * Find if the user has been logged out in the current request
-   */
-  public isLoggedOut = false;
-
-  /**
-   * A boolean to know if user is retrieved by authenticating
-   * the current request or not
-   */
-  public isAuthenticated = false;
-
-  /**
-   * A boolean to know if user is loggedin via remember me token
-   * or not.
-   */
-  public viaRemember = false;
-
-  /**
-   * Logged in or authenticated user
-   */
-  public user?: any;
 
   /**
    * The name of the session key name
@@ -56,35 +25,113 @@ export class SessionGuard extends BaseGuard implements GuardContract {
     return `auth_${this.name}`;
   }
 
-  async attempt(uid: string, password: string, ...args: any[]): Promise<any> {
-    // validate params
-    if (!uid || !password) {
-      throw InvalidCredentialsException.invalidUid(this.name);
-    }
+  /**
+   * Set the user id inside the session. Also forces the session module
+   * to re-generate the session id
+   */
+  private setSession(userId: string | number) {
+    this.request.session.set(this.sessionKeyName, userId);
+  }
 
-    // get User
-    const providerUser = await this.provider.findByUid(uid);
+  async attempt(
+    uid: string,
+    password: string,
+    remember?: boolean,
+  ): Promise<any> {
+    const user = await this.verifyCredentials(uid, password);
+    await this.login(user, remember);
+    return user;
+  }
 
-    if (!providerUser) {
-      throw InvalidCredentialsException.invalidUid(this.name);
-    }
+  /**
+   * Login a user
+   */
+  public async login(user: any, remember?: boolean): Promise<void> {
+    const providerUser = user;
 
-    // Validated password
-    const verified = await this.hash.verify(password, providerUser.password);
+    /**
+     * Set session
+     */
+    this.setSession(providerUser.id);
 
-    if (!verified) {
-      throw InvalidCredentialsException.invalidPassword(this.name);
-    }
+    this.markUserAsLoggedIn(providerUser);
 
-    // Save session
+    return providerUser.user;
+  }
 
-    this.request.session.set(this.sessionKeyName, providerUser.id);
+  /**
+   * Login user using their id
+   */
+  public async loginViaId(
+    id: string | number,
+    remember?: boolean,
+  ): Promise<void> {
+    const providerUser = await this.findById(id);
 
-    // Change params from class
-    this.user = providerUser;
-    this.isLoggedOut = false;
-    this.isAuthenticated = true;
+    await this.login(providerUser, remember);
 
     return providerUser;
+  }
+
+  /**
+   * Clears user session and remember me cookie
+   */
+  private clearUserFromStorage() {
+    this.request.session.delete();
+    // this.clearRememberMeCookie()
+  }
+
+  /**
+   * Logout by clearing session and cookies
+   */
+  public async logout(recycleRememberToken?: boolean) {
+    /**
+     * Return early when not attempting to re-generate the remember me token
+     */
+    if (!recycleRememberToken) {
+      this.clearUserFromStorage();
+      this.markUserAsLoggedOut();
+      return;
+    }
+
+    // /**
+    //  * Attempt to authenticate the current request if not already authenticated. This
+    //  * will help us get an instance of the current user
+    //  */
+    // if (!this.authenticationAttempted) {
+    //   await this.check();
+    // }
+
+    // /**
+    //  * If authentication passed, then re-generate the remember me token
+    //  * for the current user.
+    //  */
+    // if (this.user) {
+    //   const providerUser = await this.provider.getUserFor(this.user);
+
+    //   // this.ctx.logger.trace('re-generating remember me token');
+    //   // providerUser.setRememberMeToken(this.generateRememberMeToken());
+    //   // await this.provider.updateRememberMeToken(providerUser);
+    // }
+
+    /**
+     * Logout user
+     */
+    this.clearUserFromStorage();
+    this.markUserAsLoggedOut();
+  }
+
+  /**
+   * Serialize toJSON for JSON.stringify
+   */
+  public toJSON() {
+    return {
+      isLoggedIn: this.isLoggedIn,
+      isGuest: this.isGuest,
+      viaRemember: this.viaRemember,
+      authenticationAttempted: this.authenticationAttempted,
+      isAuthenticated: this.isAuthenticated,
+      user: this.user,
+    };
   }
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Post } from '@nestjs/common';
 import { AuthenticationService } from './authentication.service';
 interface SignInDTO {
   username: string;
@@ -11,8 +11,18 @@ interface SignInDTO {
 export class AuthenticationController {
   constructor(private readonly auth: AuthenticationService) {}
 
-  @Post('/sign-in')
-  signIn(@Body() body: SignInDTO) {
-    return this.auth.attempt(body.username, body.password);
+  @Delete('/logout')
+  async logout() {
+    return this.auth.logout();
+  }
+
+  @Post('/login')
+  async login(@Body() body: SignInDTO) {
+    // console.log(this.auth.toJSON());
+
+    await this.auth.loginViaId(1);
+
+    // await this.auth.attempt(body.username, body.password);
+    return this.auth.toJSON();
   }
 }

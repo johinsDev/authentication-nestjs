@@ -16,7 +16,7 @@ export const options: TypeOrmModuleOptions = {
     on production once you get data in your database. */
   // synchronize: true,
   autoLoadEntities: true,
-  logging: true,
+  logging: process.env.NODE_ENV !== 'prod',
 };
 
 export const OrmConfig = {
