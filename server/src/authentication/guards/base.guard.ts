@@ -90,13 +90,13 @@ export abstract class BaseGuard {
    */
   protected markUserAsLoggedIn(
     user: any,
-    authenticated: boolean | undefined = true,
-    viaRemember: boolean | undefined = true,
+    authenticated?: boolean,
+    viaRemember?: boolean,
   ) {
     this.user = user;
     this.isLoggedOut = false;
-    this.isAuthenticated = authenticated;
-    this.viaRemember = viaRemember;
+    authenticated && (this.isAuthenticated = authenticated);
+    viaRemember && (this.viaRemember = viaRemember);
   }
 
   /**

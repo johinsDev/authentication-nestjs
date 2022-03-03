@@ -1,33 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { GuardContract } from './authentication.interface';
-// check
-// authenticate
-// support remember
-// support rehash
-// wrap userinstace user validate hash
-// database provider
 
-// dynamic instace hash
-// dynamic instance authenticatation
-
-// Tokenguard
-// TokenProviders with redis and database
-
-// improve hashser with need redash
-
-// cache typeorm with redis
-// authensticaion - token, jwt, sesion
-// dynamic instace module authentication
-// guards
-// inject the moddel
-// ACL policies roles and permissions
-// rate limit with redis
-// social authensticaion
-// passwordless
-// strong passowrd with leak and history
-// whastapp authensticaion flow
-// email verification
-// sms authentication
+// Tdo provider user
+// Typeorm interface
+// Session guard interface
+// dynamic instance
+// OTA guard
+// Token provider
+// Guard
 @Injectable()
 export class AuthenticationService implements GuardContract {
   constructor(@Inject('GUARD') private readonly driver: GuardContract) {}
@@ -133,21 +113,21 @@ export class AuthenticationService implements GuardContract {
     return this.use().loginViaId(id, ...args);
   }
 
-  // /**
-  //  * Attempts to authenticate the user for the current HTTP request. An exception
-  //  * is raised when unable to do so
-  //  */
-  // public async authenticate() {
-  //   return this.use().authenticate();
-  // }
+  /**
+   * Attempts to authenticate the user for the current HTTP request. An exception
+   * is raised when unable to do so
+   */
+  public async authenticate() {
+    return this.use().authenticate();
+  }
 
-  // /**
-  //  * Attempts to authenticate the user for the current HTTP request and supresses
-  //  * exceptions raised by the [[authenticate]] method and returns a boolean
-  //  */
-  // public async check() {
-  //   return this.use().check();
-  // }
+  /**
+   * Attempts to authenticate the user for the current HTTP request and supresses
+   * exceptions raised by the [[authenticate]] method and returns a boolean
+   */
+  public async check() {
+    return this.use().check();
+  }
 
   /**
    * Logout user
@@ -161,12 +141,5 @@ export class AuthenticationService implements GuardContract {
    */
   public toJSON(): any {
     return this.use().toJSON();
-    // return {
-    //   defaultGuard: this.defaultGuard,
-    //   guards: [...this.mappingsCache.keys()].reduce((result, key) => {
-    //     result[key] = this.mappingsCache.get(key).toJSON();
-    //     return result;
-    //   }, {}),
-    // };
   }
 }

@@ -20,9 +20,7 @@ export class AuthenticationController {
   async login(@Body() body: SignInDTO) {
     // console.log(this.auth.toJSON());
 
-    await this.auth.loginViaId(1);
-
-    // await this.auth.attempt(body.username, body.password);
+    await this.auth.attempt(body.username, body.password);
     return this.auth.toJSON();
   }
 }

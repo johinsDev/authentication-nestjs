@@ -33,4 +33,27 @@ export class TypeORMUserProvider implements UserProvider<UserEntity> {
       }),
     });
   }
+
+  findByRememberMeToken(
+    userId: string | number,
+    token: string,
+  ): Promise<UserEntity> {
+    return this.repository.findOne({
+      where: {
+        id: userId,
+        rememberMeToken: token,
+      },
+    });
+  }
+
+  updateRememberMeToken(user: UserEntity): Promise<any> {
+    return this.repository.update(
+      {
+        id: user.id,
+      },
+      {
+        rememberMeToken: 'NMEST',
+      },
+    );
+  }
 }

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AuthenticationModule } from './authentication/authentication.module';
 import { typeOrmModuleOptions } from './config/orm.config';
@@ -21,6 +22,7 @@ import { HashModule } from './hash/hash.module';
         return database;
       },
     }),
+    EventEmitterModule.forRoot({}),
     HashModule,
     AuthenticationModule,
   ],

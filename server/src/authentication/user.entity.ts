@@ -23,6 +23,12 @@ export class UserEntity {
   })
   password: string;
 
+  @Column({
+    type: 'text',
+    nullable: true,
+  })
+  rememberMeToken?: string;
+
   @CreateDateColumn({
     type: 'timestamptz',
   })

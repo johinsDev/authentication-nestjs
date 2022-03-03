@@ -8,6 +8,16 @@ export interface UserProvider<User extends any> {
    * Find a user by searching for their uids
    */
   findByUid(uid: string): Promise<User>;
+
+  /**
+   * Find a user using the remember me token
+   */
+  findByRememberMeToken(userId: string | number, token: string): Promise<User>;
+
+  /**
+   * Update remember token
+   */
+  updateRememberMeToken(authenticatable: User): Promise<void>;
 }
 
 export interface GuardContract {
@@ -70,6 +80,18 @@ export interface GuardContract {
    * Login a user using their id
    */
   loginViaId(id: string | number, ...args: any[]): Promise<any>;
+
+  /**
+   * Attempts to authenticate the user for the current HTTP request. An exception
+   * is raised when unable to do so
+   */
+  authenticate(): Promise<any>;
+
+  /**
+   * Attempts to authenticate the user for the current HTTP request and supresses
+   * exceptions raised by the [[authenticate]] method and returns a boolean
+   */
+  check(): Promise<boolean>;
 
   /**
    * Logout user
