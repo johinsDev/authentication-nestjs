@@ -1,6 +1,15 @@
-import { Body, Controller, Delete, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { FastifyReply } from 'fastify';
 import { HashService } from 'src/hash/hash.service';
+import { AuthenticationGuard } from './authentication.guard';
 import { AuthenticationService } from './authentication.service';
 interface SignInDTO {
   username: string;
@@ -30,6 +39,12 @@ export class AuthenticationController {
     // console.log(this.auth.toJSON());
 
     await this.auth.attempt(body.username, body.password, body.rememberMe, res);
+    return this.auth.toJSON();
+  }
+
+  @UseGuards(AuthenticationGuard)
+  @Get('/me')
+  async me() {
     return this.auth.toJSON();
   }
 }

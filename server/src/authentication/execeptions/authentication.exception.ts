@@ -8,7 +8,7 @@ export class AuthenticationException extends HttpException {
   }
 
   public static invalidSession(guard: string) {
-    const error = new this('Invalid session', HttpStatus.BAD_REQUEST);
+    const error = new this('Invalid session', HttpStatus.UNAUTHORIZED);
     error.guard = guard;
     return error;
   }

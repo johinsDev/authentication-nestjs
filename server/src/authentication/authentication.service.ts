@@ -3,12 +3,15 @@ import { GuardContract } from './authentication.interface';
 
 // @TODO
 // Typeorm interface, AuthService interface
-// Guard to protect
+// Guard to silent, options in guard property in request, addToRequest, guards to review
 // dynamic instance
 // dynamic config
 
 // OTA guard
-// Token provider
+// Token provider typeorm
+
+// token provider redis
+// user provider mongo
 
 @Injectable()
 export class AuthenticationService implements GuardContract {
