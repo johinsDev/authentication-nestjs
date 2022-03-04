@@ -3,23 +3,25 @@ import { REQUEST } from '@nestjs/core';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FastifyReply, FastifyRequest } from 'fastify';
 import * as Session from 'fastify-secure-session';
-import { HashService } from 'src/hash/hash.service';
 import { generateRandom, toMs } from 'src/utils/string';
-import { GuardContract, UserProvider } from '../authentication.interface';
+import {
+  ProviderUserContract,
+  SessionGuardContract,
+  UserProvider,
+} from '../authentication.interface';
 import { AuthenticationException } from '../execeptions/authentication.exception';
 import { BaseGuard } from './base.guard';
 
 @Injectable()
-export class SessionGuard extends BaseGuard implements GuardContract {
+export class SessionGuard extends BaseGuard implements SessionGuardContract {
   constructor(
     @Inject('USER_PROVIDER')
     public readonly provider: UserProvider<any>,
-    public readonly hash: HashService,
     @Inject(REQUEST)
     private readonly request: FastifyRequest & { session: Session.Session },
     private readonly emitter: EventEmitter2,
   ) {
-    super('session', provider, hash);
+    super('session', provider);
   }
 
   private readonly logger = new Logger('SessionGuard');
@@ -176,11 +178,12 @@ export class SessionGuard extends BaseGuard implements GuardContract {
    * it
    */
   private async getPersistedRememberMeToken(
-    providerUser: any,
+    providerUser: ProviderUserContract<any>,
   ): Promise<string> {
     /**
      * Create and persist the user remember me token, when an existing one is missing
      */
+
     if (!providerUser.getRememberMeToken()) {
       this.logger.log('generating fresh remember me token');
 
@@ -213,7 +216,7 @@ export class SessionGuard extends BaseGuard implements GuardContract {
     id: string | number,
     remember?: boolean,
     res?: FastifyReply,
-  ): Promise<void> {
+  ): Promise<any> {
     const providerUser = await this.findById(id);
 
     await this.login(providerUser, remember, res);
@@ -229,24 +232,33 @@ export class SessionGuard extends BaseGuard implements GuardContract {
     remember?: boolean,
     res?: FastifyReply,
   ): Promise<void> {
-    const providerUser = user;
+    // const providerUser = await this.getUserForLogin(user, this.config.provider.identifierKey)
+    const providerUser = await this.getUserForLogin(user);
+
+    /**
+     * getUserForLogin raises exception when id is missing, so we can
+     * safely assume it is defined
+     */
+    const id = providerUser.getId()!;
 
     /**
      * Set session
      */
-    this.setSession(providerUser.id);
+    this.setSession(id);
 
     /**
      * Set remember me token when enabled
      */
     if (remember && res) {
-      const rememberMeToken = this.generateRememberMeToken();
+      const rememberMeToken = await this.getPersistedRememberMeToken(
+        providerUser,
+      );
 
       this.logger.log('setting remember me cookie', {
         name: this.rememberMeKeyName,
       });
 
-      this.setRememberMeCookie(providerUser.id, rememberMeToken, res);
+      this.setRememberMeCookie(id, rememberMeToken, res);
     }
 
     /**
@@ -254,7 +266,7 @@ export class SessionGuard extends BaseGuard implements GuardContract {
      */
     this.emitter.emit(
       'session:login',
-      this.getLoginEventData(providerUser, providerUser.rememberMeToken),
+      this.getLoginEventData(providerUser, providerUser.getRememberMeToken()),
     );
 
     this.markUserAsLoggedIn(providerUser);
@@ -283,6 +295,11 @@ export class SessionGuard extends BaseGuard implements GuardContract {
 
       this.markUserAsLoggedIn(providerUser.user, true);
 
+      this.emitter.emit(
+        'session:authenticate',
+        this.getAuthenticateEventData(providerUser.user, false),
+      );
+
       return this.user;
     }
 
@@ -309,7 +326,7 @@ export class SessionGuard extends BaseGuard implements GuardContract {
       rememberMeToken.token,
     );
 
-    this.setSession(providerUser.id);
+    this.setSession(providerUser.user.getId());
 
     this.setRememberMeCookie(rememberMeToken.id, rememberMeToken.token, res);
 
@@ -364,7 +381,7 @@ export class SessionGuard extends BaseGuard implements GuardContract {
      * for the current user.
      */
     if (this.user) {
-      const providerUser = this.user;
+      const providerUser = await this.provider.getUserFor(this.user);
 
       this.logger.log('re-generating remember me token');
       // providerUser.setRememberMeToken(this.generateRememberMeToken());

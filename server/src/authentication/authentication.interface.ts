@@ -1,24 +1,11 @@
-export interface UserProvider<User extends any> {
-  /**
-   * Find a user using the primary key value
-   */
-  findById(id: string | number): Promise<User>;
+import { FastifyReply } from 'fastify';
+import { UserEntity } from './user.entity';
 
-  /**
-   * Find a user by searching for their uids
-   */
-  findByUid(uid: string): Promise<User>;
-
-  /**
-   * Find a user using the remember me token
-   */
-  findByRememberMeToken(userId: string | number, token: string): Promise<User>;
-
-  /**
-   * Update remember token
-   */
-  updateRememberMeToken(authenticatable: User): Promise<void>;
-}
+/*
+  |--------------------------------------------------------------------------
+  | Guards
+  |--------------------------------------------------------------------------
+  */
 
 export interface GuardContract {
   name: string;
@@ -102,4 +89,89 @@ export interface GuardContract {
    * Serialize guard to JSON
    */
   toJSON(): any;
+}
+
+/*
+  |--------------------------------------------------------------------------
+  | Session Guard
+  |--------------------------------------------------------------------------
+  */
+
+/**
+ * Shape of the session guard
+ */
+export interface SessionGuardContract extends GuardContract {
+  /**
+   * A boolean to know if user is loggedin via remember me token or not.
+   */
+  viaRemember: boolean;
+
+  /**
+   * Attempt to verify user credentials and perform login
+   */
+  attempt(
+    uid: string,
+    password: string,
+    remember?: boolean,
+    res?: FastifyReply,
+  ): Promise<any>;
+
+  /**
+   * Login a user without any verification
+   */
+  login(user: any, remember?: boolean, res?: FastifyReply): Promise<any>;
+
+  /**
+   * Login a user using their id
+   */
+  loginViaId(id: string | number, remember?: boolean): Promise<any>;
+
+  /**
+   * Logout user
+   */
+  logout(renewRememberToken?: boolean): Promise<void>;
+}
+
+/**
+ * Provider user works as a bridge between the provider real user
+ * and the guard. It is never exposed to the end-user.
+ */
+export interface ProviderUserContract<User extends any> {
+  user: User | null;
+  getId(): string | number | null;
+  verifyPassword: (plainPassword: string) => Promise<boolean>;
+  getRememberMeToken(): string | null;
+  setRememberMeToken(token: string): void;
+}
+
+export interface UserProvider<User extends any> {
+  /**
+   * Return an instance of the user wrapped inside the Provider user contract
+   */
+  getUserFor(user: User): ProviderUserContract<User>;
+
+  /**
+   * Find a user using the primary key value
+   */
+  findById(id: string | number): Promise<ProviderUserContract<User>>;
+
+  /**
+   * Find a user by searching for their uids
+   */
+  findByUid(uid: string): Promise<ProviderUserContract<User>>;
+
+  /**
+   * Find a user using the remember me token
+   */
+  findByRememberMeToken(
+    userId: string | number,
+    token: string,
+  ): Promise<ProviderUserContract<User>>;
+
+  /**
+   * Update remember token
+   */
+  updateRememberMeToken(
+    authenticatable: ProviderUserContract<UserEntity>,
+  ): Promise<void>;
 }

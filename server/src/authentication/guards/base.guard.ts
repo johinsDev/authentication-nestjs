@@ -1,13 +1,11 @@
-import { HashService } from 'src/hash/hash.service';
-import { UserProvider } from '../authentication.interface';
+import {
+  ProviderUserContract,
+  UserProvider,
+} from '../authentication.interface';
 import { InvalidCredentialsException } from '../execeptions/invalid-credentials.exeception';
 
 export abstract class BaseGuard {
-  constructor(
-    public name: string,
-    public provider: UserProvider<any>,
-    public hash: HashService,
-  ) {}
+  constructor(public name: string, public provider: UserProvider<any>) {}
 
   /**
    * Whether or not the authentication has been attempted
@@ -58,7 +56,7 @@ export abstract class BaseGuard {
   private async lookupUsingUid(uid: string): Promise<any> {
     const providerUser = await this.provider.findByUid(uid);
 
-    if (!providerUser) {
+    if (!providerUser.user) {
       throw InvalidCredentialsException.invalidUid(this.name);
     }
 
@@ -69,14 +67,13 @@ export abstract class BaseGuard {
    * Verify user password
    */
   private async verifyPassword(
-    providerUser: any,
+    providerUser: ProviderUserContract<any>,
     password: string,
   ): Promise<void> {
     /**
      * Verify password or raise exception
      */
-    // const verified = await providerUser.verifyPassword(password);
-    const verified = await this.hash.verify(password, providerUser.password);
+    const verified = await providerUser.verifyPassword(password);
 
     if (!verified) {
       throw InvalidCredentialsException.invalidPassword(this.name);
@@ -111,7 +108,7 @@ export abstract class BaseGuard {
 
     await this.verifyPassword(providerUser, password);
 
-    return providerUser;
+    return providerUser.user;
   }
 
   /**
@@ -120,8 +117,31 @@ export abstract class BaseGuard {
   protected async findById(id: string | number) {
     const providerUser = await this.provider.findById(id);
 
-    if (!providerUser) {
+    if (!providerUser.user) {
       throw InvalidCredentialsException.invalidUid(this.name);
+    }
+
+    return providerUser;
+  }
+
+  /**
+   * Returns the provider user instance from the regular user details. Raises
+   * exception when id is missing
+   */
+  protected async getUserForLogin(
+    user: any,
+    identifierKey?: string | undefined,
+  ): Promise<ProviderUserContract<any>> {
+    const providerUser = await this.provider.getUserFor(user);
+
+    /**
+     * Ensure id exists on the user
+     */
+    const id = providerUser.getId();
+    if (!id) {
+      throw new Error(
+        `Cannot login user. Value of "${identifierKey}" is not defined`,
+      );
     }
 
     return providerUser;

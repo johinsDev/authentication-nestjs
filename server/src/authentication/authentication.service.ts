@@ -1,13 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { GuardContract } from './authentication.interface';
 
-// Tdo provider user
-// Typeorm interface
-// Session guard interface
+// @TODO
+// Typeorm interface, AuthService interface
+// Guard to protect
 // dynamic instance
+// dynamic config
+
 // OTA guard
 // Token provider
-// Guard
+
 @Injectable()
 export class AuthenticationService implements GuardContract {
   constructor(@Inject('GUARD') private readonly driver: GuardContract) {}
