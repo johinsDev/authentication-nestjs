@@ -1,4 +1,5 @@
 import { FastifyReply } from 'fastify';
+import { EntitySchema } from 'typeorm';
 import { UserEntity } from './user.entity';
 
 /*
@@ -174,4 +175,25 @@ export interface UserProvider<User extends any> {
   updateRememberMeToken(
     authenticatable: ProviderUserContract<UserEntity>,
   ): Promise<void>;
+}
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type TypeormUserProvider<User = Function | EntitySchema> =
+  UserProvider<User>;
+
+/**
+ * Instance of the auth contract. The `use` method can be used to obtain
+ * an instance of a given guard mapping for a single HTTP request
+ */
+export interface AuthContract extends GuardContract {
+  /**
+   * The default guard for the current request
+   */
+  defaultGuard: string;
+
+  /**
+   * Use a given guard
+   */
+  // use(): GuardContract<keyof ProvidersList, keyof GuardsList>;
+  // use<K extends keyof GuardsList>(guard: K): GuardsList[K]['implementation'];
 }

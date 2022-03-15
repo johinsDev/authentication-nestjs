@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ProviderUserContract,
-  UserProvider,
+  TypeormUserProvider,
 } from 'src/authentication/authentication.interface';
 import { UserEntity } from 'src/authentication/user.entity';
 import { HashService } from 'src/hash/hash.service';
@@ -10,9 +9,9 @@ import { Repository } from 'typeorm';
 import { TypemORMUser } from './user';
 
 @Injectable()
-export class TypeORMUserProvider implements UserProvider<UserEntity> {
+export class TypeORMUserProvider implements TypeormUserProvider<UserEntity> {
   constructor(
-    @InjectRepository(UserEntity)
+    @Inject('USER_REPOSITORY')
     private readonly repository: Repository<UserEntity>,
     private readonly hash: HashService,
   ) {}

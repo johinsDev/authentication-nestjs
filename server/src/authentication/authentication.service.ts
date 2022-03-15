@@ -1,27 +1,17 @@
-import { Inject, Injectable } from '@nestjs/common';
-import { GuardContract } from './authentication.interface';
-
-// @TODO
-// Typeorm interface, AuthService interface
-// Guard to silent, options in guard property in request, addToRequest, guards to review
-// dynamic instance
-// dynamic config
-
-// OTA guard
-// Token provider typeorm
-
-// token provider redis
-// user provider mongo
+import { Injectable } from '@nestjs/common';
+import { AuthContract, GuardContract } from './authentication.interface';
 
 @Injectable()
-export class AuthenticationService implements GuardContract {
-  constructor(@Inject('GUARD') private readonly driver: GuardContract) {}
+export class AuthenticationService implements AuthContract {
+  constructor(private readonly drivers: Map<string, GuardContract>) {}
+
+  defaultGuard = 'api';
 
   /**
    * Returns an instance of a named or the default mapping
    */
   public use(mapping?: string) {
-    return this.driver;
+    return this.drivers.get(mapping ?? this.defaultGuard);
   }
 
   /**

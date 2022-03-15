@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { AuthenticationModule } from './authentication/authentication.module';
+import { UserEntity } from './authentication/user.entity';
 import { typeOrmModuleOptions } from './config/orm.config';
 import { HashModule } from './hash/hash.module';
 
@@ -24,7 +25,19 @@ import { HashModule } from './hash/hash.module';
     }),
     EventEmitterModule.forRoot({}),
     HashModule,
-    AuthenticationModule,
+    AuthenticationModule.forRoot({
+      list: {
+        api: {
+          driver: 'session',
+          // implementation: () => new SessionGuard(),
+          provider: {
+            driver: 'typeorm',
+            model: () => UserEntity,
+          },
+          // implementation: (provider) =>  new SessionGuard(provider, )
+        },
+      },
+    }),
   ],
   controllers: [],
   providers: [],

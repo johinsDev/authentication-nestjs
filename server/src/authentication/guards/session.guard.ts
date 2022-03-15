@@ -15,7 +15,6 @@ import { BaseGuard } from './base.guard';
 @Injectable()
 export class SessionGuard extends BaseGuard implements SessionGuardContract {
   constructor(
-    @Inject('USER_PROVIDER')
     public readonly provider: UserProvider<any>,
     @Inject(REQUEST)
     private readonly request: FastifyRequest & { session: Session.Session },
