@@ -26,6 +26,7 @@ import { HashModule } from './hash/hash.module';
     EventEmitterModule.forRoot({}),
     HashModule,
     AuthenticationModule.forRoot({
+      default: 'api',
       list: {
         api: {
           driver: 'session',
@@ -33,6 +34,7 @@ import { HashModule } from './hash/hash.module';
           provider: {
             driver: 'typeorm',
             model: () => UserEntity,
+            uids: ['email'],
           },
           // implementation: (provider) =>  new SessionGuard(provider, )
         },

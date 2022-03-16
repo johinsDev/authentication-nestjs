@@ -5,21 +5,27 @@
  */
 
 import { ProviderUserContract } from 'src/authentication/authentication.interface';
-import { UserEntity } from 'src/authentication/user.entity';
+import { TypeormUserProviderConfig } from 'src/authentication/authentication.module';
 import { HashService } from 'src/hash/hash.service';
+import { ObjectLiteral } from 'typeorm';
 
 /**
  * Lucid works works a bridge between the provider and the guard
  */
-export class TypemORMUser implements ProviderUserContract<UserEntity> {
-  constructor(private hash: HashService, public user: UserEntity) {}
+export class TypemORMUser<UserEntity extends ObjectLiteral>
+  implements ProviderUserContract<UserEntity>
+{
+  constructor(
+    private hash: HashService,
+    public user: UserEntity,
+    private config: TypeormUserProviderConfig,
+  ) {}
 
   /**
    * Returns the value of the user id
    */
   public getId() {
-    return this.user ? this.user.id : null;
-    // return this.user ? this.user[this.config.identifierKey] : null;
+    return this.user ? this.user[this.config.identifierKey] : null;
   }
 
   /**
@@ -32,6 +38,7 @@ export class TypemORMUser implements ProviderUserContract<UserEntity> {
     /**
      * Ensure user has password
      */
+
     if (!this.user.password) {
       throw new Error(
         'Auth user object must have a password in order to call "verifyPassword"',
@@ -55,6 +62,7 @@ export class TypemORMUser implements ProviderUserContract<UserEntity> {
     if (!this.user) {
       throw new Error('Cannot set "rememberMeToken" on non-existing user');
     }
-    this.user.rememberMeToken = token;
+
+    (this.user as any).rememberMeToken = token;
   }
 }

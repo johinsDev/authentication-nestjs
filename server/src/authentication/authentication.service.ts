@@ -10,8 +10,12 @@ export class AuthenticationService implements AuthContract {
   /**
    * Returns an instance of a named or the default mapping
    */
-  public use(mapping?: string) {
-    return this.drivers.get(mapping ?? this.defaultGuard);
+  public use(mapping: string | undefined = this.defaultGuard) {
+    if (!this.drivers.has(mapping)) {
+      throw new Error(`Driver ${mapping} doesn't exists.`);
+    }
+
+    return this.drivers.get(mapping);
   }
 
   /**

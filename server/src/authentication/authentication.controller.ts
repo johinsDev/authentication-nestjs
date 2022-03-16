@@ -38,8 +38,12 @@ export class AuthenticationController {
   ) {
     // console.log(this.auth.toJSON());
 
-    await this.auth.attempt(body.username, body.password, body.rememberMe, res);
-    return this.auth.toJSON();
+    return this.auth.attempt(
+      body.username,
+      body.password,
+      body.rememberMe,
+      res,
+    );
   }
 
   @UseGuards(AuthenticationGuard)

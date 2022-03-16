@@ -1,6 +1,5 @@
 import { FastifyReply } from 'fastify';
 import { EntitySchema } from 'typeorm';
-import { UserEntity } from './user.entity';
 
 /*
   |--------------------------------------------------------------------------
@@ -173,7 +172,7 @@ export interface UserProvider<User extends any> {
    * Update remember token
    */
   updateRememberMeToken(
-    authenticatable: ProviderUserContract<UserEntity>,
+    authenticatable: ProviderUserContract<User>,
   ): Promise<void>;
 }
 

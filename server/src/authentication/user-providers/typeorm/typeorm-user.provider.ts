@@ -3,42 +3,40 @@ import {
   ProviderUserContract,
   TypeormUserProvider,
 } from 'src/authentication/authentication.interface';
-import { UserEntity } from 'src/authentication/user.entity';
+import { TypeormUserProviderConfig } from 'src/authentication/authentication.module';
 import { HashService } from 'src/hash/hash.service';
-import { Repository } from 'typeorm';
+import { FindCondition, ObjectLiteral, Repository } from 'typeorm';
 import { TypemORMUser } from './user';
 
 @Injectable()
-export class TypeORMUserProvider implements TypeormUserProvider<UserEntity> {
+export class TypeORMUserProvider<UserEntity extends ObjectLiteral>
+  implements TypeormUserProvider<UserEntity>
+{
   constructor(
     @Inject('USER_REPOSITORY')
     private readonly repository: Repository<UserEntity>,
+    private readonly config: TypeormUserProviderConfig,
     private readonly hash: HashService,
   ) {}
 
-  private uids: Array<keyof UserEntity> = ['email'];
+  private uids = this.config.uids;
 
-  public get select(): Array<keyof UserEntity> {
-    return ['id', ...this.uids, 'password', 'rememberMeToken'];
-  }
+  private identifierKey = this.config.identifierKey;
 
   getUserFor(user: UserEntity): ProviderUserContract<UserEntity> {
-    return new TypemORMUser(this.hash, user);
+    return new TypemORMUser(this.hash, user, this.config);
   }
 
   async findById(
     id: string | number,
   ): Promise<ProviderUserContract<UserEntity>> {
-    const user = await this.repository.findOne(id, {
-      select: this.select,
-    });
+    const user = await this.repository.findOne(id);
 
     return this.getUserFor(user);
   }
 
   async findByUid(uid: string): Promise<ProviderUserContract<UserEntity>> {
     const user = await this.repository.findOne({
-      select: this.select,
       where: this.uids.map((field) => {
         return {
           [field]: uid,
@@ -68,8 +66,8 @@ export class TypeORMUserProvider implements TypeormUserProvider<UserEntity> {
   ): Promise<any> {
     return this.repository.update(
       {
-        id: providerUser.getId().toString(),
-      },
+        [this.identifierKey]: providerUser.getId().toString(),
+      } as unknown as FindCondition<any>,
       {
         rememberMeToken: providerUser.user.rememberMeToken,
       },

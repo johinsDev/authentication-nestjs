@@ -10,7 +10,13 @@ import { REQUEST } from '@nestjs/core';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { getConnectionToken, TypeOrmModule } from '@nestjs/typeorm';
 import { FastifyRequest } from 'fastify';
-import { Connection, ConnectionOptions, EntitySchema } from 'typeorm';
+import { HashService } from 'src/hash/hash.service';
+import {
+  Connection,
+  ConnectionOptions,
+  EntitySchema,
+  Repository,
+} from 'typeorm';
 import { AuthenticationController } from './authentication.controller';
 import {
   GuardContract,
@@ -21,21 +27,24 @@ import { AuthenticationService } from './authentication.service';
 import { SessionGuard } from './guards/session.guard';
 import { TypeORMUserProvider } from './user-providers/typeorm/typeorm-user.provider';
 
-interface AuthenticationModuleOptions {
+export interface TypeormUserProviderConfig {
+  driver: 'typeorm';
+  uids?: string[]; // ['email]
+  identifierKey?: string; // id;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  model: () => Function | EntitySchema;
+  // options connection
+  connection?: Connection | ConnectionOptions | string;
+}
+
+export interface AuthenticationModuleOptions {
+  default: keyof AuthenticationModuleOptions['list'];
   list: Record<
     string,
     {
       driver: string;
       implementation?: (provider: UserProvider<any>) => SessionGuardContract;
-      provider: {
-        driver: 'typeorm';
-        uids?: string[]; // ['email]
-        identifierKey?: string; // id;
-        // eslint-disable-next-line @typescript-eslint/ban-types
-        model: () => Function | EntitySchema;
-        // options connection
-        connection?: Connection | ConnectionOptions | string;
-      };
+      provider: TypeormUserProviderConfig;
     }
   >;
 }
@@ -61,13 +70,32 @@ export class AuthenticationModule {
 
       const userProviderName = `${guardName}_PROVIDER_${options.provider.driver.toUpperCase()}`;
 
+      const userProviderConfigName = `${guardName}_PROVIDER_${options.provider.driver.toUpperCase()}_CONFIG`;
+
       drivers.push(provide);
+
+      // Instance config
+      const config = {
+        provide: userProviderConfigName,
+        useValue: {
+          uids: ['email'],
+          identifierKey: 'id',
+          ...options.provider,
+        },
+      };
 
       // Instance user providers
       const userProvider = [
         {
           provide: userProviderName,
-          useClass: TypeORMUserProvider,
+          useFactory: (
+            repository: Repository<any>,
+            hash: HashService,
+            config: TypeormUserProviderConfig,
+          ) => {
+            return new TypeORMUserProvider(repository, config, hash);
+          },
+          inject: ['USER_REPOSITORY', HashService, userProviderConfigName],
         },
         {
           provide: 'USER_REPOSITORY',
@@ -94,7 +122,7 @@ export class AuthenticationModule {
         inject: [userProviderName, REQUEST, EventEmitter2],
       };
 
-      providers.push(...userProvider, guardProvider);
+      providers.push(config, ...userProvider, guardProvider);
     });
 
     // Instance authentication service
